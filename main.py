@@ -1,28 +1,72 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query, Path, HTTPException
+from typing import Optional, List, Dict, Any
 
 app = FastAPI()
 
-student_list = ["Dean", "Paul", "Alex", "Napoleon", "Kent", "Torre"]
+prices_db = [1500.50, 2000.75, 3000.25, 4000.00, 5000.50, 6000.75, 7000.25, 8000.00]
 
 
-@app.get("/student/{student_id}")
-async def get_student(student_id: int):
-    return {"message": student_list[student_id]}
+@app.get("/prices")
+def get_filtered_prices(
+    min_price: Optional[float] = Query(
+        default=None,
+        ge=0.0,
+        title="Minimum Price",
+        description="Filter prices greater than or equal to this value",
+    ),
+    max_price: Optional[float] = Query(
+        default=None,
+        ge=0.0,
+        title="Maximum Price",
+        description="Filter prices less than or equal to this value",
+    ),
+):
+    if min_price is not None and max_price is not None and min_price > max_price:
+        raise HTTPException(
+            status_code=400,
+            detail="min_price cannot be greater than max_price",
+        )
+
+    filtered = prices_db
+
+    if min_price is not None:
+        filtered = [p for p in filtered if p >= min_price]
+
+    if max_price is not None:
+        filtered = [p for p in filtered if p <= max_price]
+
+    return {
+        "filtered_prices": filtered,
+        "count": len(filtered),
+    }
 
 
-@app.post("/student/{student_name}")
-async def add_student(student_name: str):
-    student_list.append(student_name)
-    return {"message": "Student successfully added"}
+employee_db: dict[int, str] = {
+    101: "Dean Ong",
+    102: "Nino Javier",
+    103: "Bongbong Marcos",
+    104: "Leni Robredo",
+    105: "Rene Baterbonia",
+    106: "Robin Padilla",
+    107: "Sarah Duterte",
+    108: "Lebron James",
+}
 
 
-@app.put("/student/{student_id}")
-async def update_student(student_id: int, student_name: str):
-    student_list[student_id] = student_name
-    return {"message": "Student successfully updated"}
+@app.get("/employees/{emp_id}")
+def get_employee(
+    emp_id: int = Path(
+        title="Employee ID",
+        description="3-digit internal employee code",
+    ),
+):
+    if emp_id not in employee_db:
+        raise HTTPException(
+            status_code=404,
+            detail="Employee record not found",
+        )
 
-
-@app.delete("/student/{student_id}")
-async def delete_student(student_id: int):
-    del student_list[student_id]
-    return {"message": "Student successfully deleted"}
+    return {
+        "emp_id": emp_id,
+        "name": employee_db[emp_id],
+    }
