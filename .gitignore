@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+.pythonlibs/
+.venv/
+.cache/
+*.db
+*.db-journal
